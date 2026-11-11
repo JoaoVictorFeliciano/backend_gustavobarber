@@ -1,0 +1,315 @@
+
+.agendamento {
+    min-height: calc(100vh - 85px);
+    padding: 60px 20px;
+    background-color: #101010;
+}
+
+.agendamento-header {
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.agendamento-header > p {
+    color: #39FF14;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+}
+
+.agendamento-header h1 {
+    font-size: clamp(28px, 4vw, 42px);
+    margin-bottom: 15px;
+}
+
+.agendamento-header span {
+    color: #bdbdbd;
+    font-size: 15px;
+}
+
+.agendamento-form {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 35px;
+    background-color: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 10px;
+}
+
+/* Campos do formulário */
+
+.campo {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 22px;
+}
+
+.campo label {
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: bold;
+    margin-bottom: 9px;
+}
+
+.campo input,
+.campo select {
+    width: 100%;
+    padding: 14px;
+    background-color: #101010;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 5px;
+    font-size: 14px;
+    outline: none;
+}
+
+.campo input:focus,
+.campo select:focus {
+    border-color: #39FF14;
+    box-shadow: 0 0 8px #39FF1430;
+}
+
+.campo input::placeholder {
+    color: #777;
+}
+
+/* Navegação entre semanas */
+
+.navegacao-semana {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.navegacao-semana button {
+    padding: 10px 12px;
+    background-color: #181818;
+    color: #39FF14;
+    border: 1px solid #39FF14;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: bold;
+    transition: 0.3s;
+}
+
+.navegacao-semana button:hover:not(:disabled) {
+    background-color: #39FF14;
+    color: #101010;
+}
+
+.navegacao-semana button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+}
+
+/* Dias da semana */
+
+.dias-semana {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+}
+
+.dias-semana button {
+    padding: 12px 5px;
+    border: 1px solid #444;
+    border-radius: 6px;
+    background-color: #181818;
+    color: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: 0.3s;
+    cursor: pointer;
+}
+
+.dias-semana button:hover:not(:disabled) {
+    border-color: #39FF14;
+    color: #39FF14;
+}
+
+.dias-semana .dia-selecionado {
+    background-color: #39FF14;
+    color: #101010;
+    border-color: #39FF14;
+}
+
+.dias-semana .dia-selecionado:hover {
+    background-color: #28d90b;
+    color: #101010;
+}
+
+.dias-semana button span {
+    font-size: 12px;
+}
+
+.dias-semana button strong {
+    font-size: 18px;
+}
+
+/* Dias que já passaram */
+
+.dias-semana button:disabled {
+    opacity: 0.3;
+    cursor: not-allowed;
+    border-color: #333;
+}
+
+/* Horários */
+
+.horarios-disponiveis {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+}
+
+.horarios-disponiveis button {
+    padding: 12px;
+    background-color: #181818;
+    color: #ffffff;
+    border: 1px solid #444;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: 0.3s;
+    font-size: 14px;
+}
+
+.horarios-disponiveis button:hover:not(:disabled) {
+    border-color: #39FF14;
+    color: #39FF14;
+}
+
+/* Horário selecionado */
+
+.horarios-disponiveis .horario-selecionado {
+    background-color: #39FF14;
+    color: #101010;
+    border-color: #39FF14;
+}
+
+.horarios-disponiveis .horario-selecionado:hover {
+    background-color: #28d90b;
+    color: #101010;
+}
+
+/* Horários ocupados */
+
+.horarios-disponiveis button:disabled {
+    background-color: #292929;
+    color: #777;
+    border-color: #444;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+.horarios-disponiveis button:disabled span {
+    display: block;
+    font-size: 10px;
+    margin-top: 5px;
+    font-weight: bold;
+    color: #999;
+}
+
+/* Mensagens de carregamento */
+
+.campo > p {
+    color: #bdbdbd;
+    font-size: 13px;
+    margin-top: 5px;
+}
+
+/* Mensagem de sucesso */
+
+.mensagem-sucesso {
+    color: #39FF14;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+/* Mensagem de erro */
+
+.mensagem-erro {
+    color: #ff5555;
+    text-align: center;
+    font-weight: bold;
+    font-size: 14px;
+    margin-top: 15px;
+}
+
+/* Botão de agendamento */
+
+.botao-agendar {
+    width: 100%;
+    padding: 16px;
+    margin-top: 15px;
+    background-color: #39FF14;
+    color: #101010;
+    border: none;
+    border-radius: 6px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.botao-agendar:hover:not(:disabled) {
+    background-color: #28d90b;
+    transform: translateY(-2px);
+}
+
+.botao-agendar:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* Responsividade para tablets e celulares */
+
+@media (max-width: 600px) {
+    .agendamento {
+        padding: 40px 15px;
+    }
+
+    .agendamento-form {
+        padding: 22px;
+    }
+
+    .navegacao-semana button {
+        font-size: 10px;
+        padding: 9px 8px;
+    }
+}
+
+/* Ajustes para celulares menores */
+
+@media (max-width: 480px) {
+    .dias-semana {
+        gap: 5px;
+    }
+
+    .dias-semana button {
+        padding: 10px 2px;
+    }
+
+    .dias-semana button span {
+        font-size: 10px;
+    }
+
+    .dias-semana button strong {
+        font-size: 16px;
+    }
+
+    .horarios-disponiveis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .agendamento-form {
+        padding: 18px;
+    }
+}

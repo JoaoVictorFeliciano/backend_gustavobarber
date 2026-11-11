@@ -1,0 +1,90 @@
+
+.servicos {
+    min-height: calc(100vh - 85px);
+    padding: 60px 8%;
+    background-color: #101010;
+}
+
+.servicos-header {
+    text-align: center;
+    margin-bottom: 50px;
+}
+
+.servicos-header > p {
+    color: #39FF14;
+    font-size: 14px;
+    font-weight: bold;
+    letter-spacing: 3px;
+    margin-bottom: 15px;
+}
+
+.servicos-header h1 {
+    font-size: clamp(30px, 4vw, 45px);
+    margin-bottom: 15px;
+}
+
+.servicos-header span {
+    color: #bdbdbd;
+    font-size: 16px;
+}
+
+.servicos-lista {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 25px;
+    max-width: 1000px;
+    margin: 0 auto;
+}
+
+.servico-card {
+    background-color: #1c1c1c;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 35px;
+    transition: all 0.3s;
+}
+
+.servico-card:hover {
+    border-color: #39FF14;
+    box-shadow: 0 0 18px #39FF1425;
+    transform: translateY(-5px);
+}
+
+.servico-card h2 {
+    color: #39FF14;
+    font-size: 24px;
+    margin-bottom: 15px;
+}
+
+.servico-card p {
+    color: #cccccc;
+    font-size: 15px;
+    line-height: 1.6;
+    margin-bottom: 25px;
+}
+
+.servico-card a {
+    display: inline-block;
+    background-color: #39FF14;
+    color: #101010;
+    padding: 12px 22px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 13px;
+    transition: all 0.3s;
+}
+
+.servico-card a:hover {
+    background-color: #28d90b;
+    box-shadow: 0 0 15px #39FF1480;
+}
+
+@media (max-width: 700px) {
+    .servicos-lista {
+        grid-template-columns: 1fr;
+    }
+
+    .servico-card {
+        padding: 25px;
+    }
+}
