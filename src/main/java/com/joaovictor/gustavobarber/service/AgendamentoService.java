@@ -1,9 +1,11 @@
+
 package com.joaovictor.gustavobarber.service;
 
 import com.joaovictor.gustavobarber.dto.AgendamentoRequestDto;
 import com.joaovictor.gustavobarber.dto.AgendamentoResponseDto;
 import com.joaovictor.gustavobarber.dto.DisponibilidadeRequestDto;
 import com.joaovictor.gustavobarber.dto.DisponibilidadeResponseDto;
+import com.joaovictor.gustavobarber.dto.HorarioDisponibilidadeDto;
 import com.joaovictor.gustavobarber.enumerate.StatusAgendamento;
 import com.joaovictor.gustavobarber.exception.ConflitoException;
 import com.joaovictor.gustavobarber.exception.RegraNegocioException;
@@ -13,9 +15,13 @@ import com.joaovictor.gustavobarber.model.Cliente;
 import com.joaovictor.gustavobarber.model.Servico;
 import com.joaovictor.gustavobarber.repository.AgendamentoRepository;
 import com.joaovictor.gustavobarber.repository.ServicoRepository;
+
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.jdbc.core.JdbcTemplate;
+
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -96,10 +102,10 @@ public class AgendamentoService {
 
         Servico servico = buscarServico(dto.getServicoId());
 
-        List<LocalTime> horariosDisponiveis = new ArrayList<>();
+        List<HorarioDisponibilidadeDto> horarios = new ArrayList<>();
 
         adicionarHorariosDisponiveis(
-                horariosDisponiveis,
+                horarios,
                 dto.getData(),
                 servico,
                 LocalTime.of(8, 0),
@@ -107,19 +113,19 @@ public class AgendamentoService {
         );
 
         adicionarHorariosDisponiveis(
-                horariosDisponiveis,
+                horarios,
                 dto.getData(),
                 servico,
                 LocalTime.of(13, 0),
                 LocalTime.of(18, 0)
         );
 
-        return new DisponibilidadeResponseDto(horariosDisponiveis);
+        return new DisponibilidadeResponseDto(horarios);
     }
 
     // Gerar horários disponíveis em intervalos de 30 minutos
     private void adicionarHorariosDisponiveis(
-            List<LocalTime> horariosDisponiveis,
+            List<HorarioDisponibilidadeDto> horarios,
             LocalDate data,
             Servico servico,
             LocalTime inicio,
@@ -129,21 +135,22 @@ public class AgendamentoService {
 
         while (!horario.plusMinutes(servico.getDuracaoMinutos()).isAfter(fim)) {
 
-            boolean horarioValido = true;
-
             if (data.equals(LocalDate.now())
                     && !horario.isAfter(LocalTime.now())) {
 
-                horarioValido = false;
+                horario = horario.plusMinutes(30);
+                continue;
             }
 
-            if (horarioValido && !existeConflito(
+            boolean disponivel = !existeConflito(
                     data,
                     horario,
-                    servico.getDuracaoMinutos())) {
+                    servico.getDuracaoMinutos()
+            );
 
-                horariosDisponiveis.add(horario);
-            }
+            horarios.add(
+                    new HorarioDisponibilidadeDto(horario, disponivel)
+            );
 
             horario = horario.plusMinutes(30);
         }
@@ -252,14 +259,29 @@ public class AgendamentoService {
         return converterParaResponseDto(agendamento);
     }
 
-    // Listar todos os agendamentos
+    // Listar agendamentos com pesquisa, filtros e paginação
     @Transactional(readOnly = true)
-    public List<AgendamentoResponseDto> listarTodos() {
+    public Page<AgendamentoResponseDto> listarTodos(
+            String pesquisa,
+            StatusAgendamento status,
+            LocalDate dataInicio,
+            LocalDate dataFim,
+            Pageable pageable) {
 
-        return agendamentoRepository.findAll()
-                .stream()
-                .map(this::converterParaResponseDto)
-                .toList();
+        if (dataInicio != null && dataFim != null
+                && dataInicio.isAfter(dataFim)) {
+
+            throw new RegraNegocioException(
+                    "A data inicial não pode ser posterior à data final.");
+        }
+
+        return agendamentoRepository.buscarComFiltros(
+                pesquisa,
+                status,
+                dataInicio,
+                dataFim,
+                pageable
+        ).map(this::converterParaResponseDto);
     }
 
     // Cancelar agendamento

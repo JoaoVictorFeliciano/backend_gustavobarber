@@ -4,7 +4,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalTime;
 import java.util.List;
 
 @Getter
@@ -12,5 +11,5 @@ import java.util.List;
 @NoArgsConstructor
 public class DisponibilidadeResponseDto {
 
-    private List<LocalTime> horariosDisponiveis;
+    private List<HorarioDisponibilidadeDto> horarios;
 }
