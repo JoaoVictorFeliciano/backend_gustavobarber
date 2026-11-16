@@ -17,6 +17,10 @@ public class AgendamentoRequestDto {
 
     @NotBlank(message = "O telefone é obrigatório")
     @Size(max = 20, message = "O telefone deve ter no máximo 20 caracteres")
+    @Pattern(
+            regexp = "^[0-9()+\\-\\s]+$",
+            message = "O telefone contém caracteres inválidos"
+    )
     private String telefoneCliente;
 
     @NotNull(message = "A data do agendamento é obrigatória")

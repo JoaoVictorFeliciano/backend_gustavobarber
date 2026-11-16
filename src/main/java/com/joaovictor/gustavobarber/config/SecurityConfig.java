@@ -74,22 +74,40 @@ public class SecurityConfig {
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        // Login público
                         .requestMatchers("/api/admin/login").permitAll()
+
+                        // Swagger
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/v3/api-docs/**"
                         ).permitAll()
+
+                        // Consulta de serviços pública
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/servicos",
                                 "/api/servicos/**"
                         ).permitAll()
+
+                        // Criação de agendamentos e consulta de horários pública
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/api/agendamentos",
                                 "/api/agendamentos/disponibilidade"
                         ).permitAll()
+
+                        // Demais rotas administrativas
+                        .requestMatchers("/api/admin/**").hasRole("ADMIN")
+
+                        // Gerenciamento de serviços
+                        .requestMatchers("/api/servicos/**").hasRole("ADMIN")
+
+                        // Gerenciamento de agendamentos
+                        .requestMatchers("/api/agendamentos/**").hasRole("ADMIN")
+
+                        // Demais rotas exigem autenticação
                         .anyRequest().authenticated()
                 )
                 .httpBasic(basic -> basic.disable())
