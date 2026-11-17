@@ -18,6 +18,7 @@ import com.joaovictor.gustavobarber.repository.ServicoRepository;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -275,13 +276,61 @@ public class AgendamentoService {
                     "A data inicial não pode ser posterior à data final.");
         }
 
-        return agendamentoRepository.buscarComFiltros(
-                pesquisa,
-                status,
-                dataInicio,
-                dataFim,
-                pageable
-        ).map(this::converterParaResponseDto);
+        Specification<Agendamento> specification =
+                (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+
+        if (pesquisa != null && !pesquisa.isBlank()) {
+            String termo = "%" + pesquisa.toLowerCase() + "%";
+            String termoTelefone = "%" + pesquisa + "%";
+
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.or(
+                            criteriaBuilder.like(
+                                    criteriaBuilder.lower(
+                                            root.get("cliente").get("nome").as(String.class)
+                                    ),
+                                    termo
+                            ),
+                            criteriaBuilder.like(
+                                    root.get("cliente").get("telefone").as(String.class),
+                                    termoTelefone
+                            ),
+                            criteriaBuilder.like(
+                                    criteriaBuilder.lower(
+                                            root.get("servico").get("nome").as(String.class)
+                                    ),
+                                    termo
+                            )
+                    )
+            );
+        }
+
+        if (status != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.equal(root.get("status"), status)
+            );
+        }
+
+        if (dataInicio != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.greaterThanOrEqualTo(
+                            root.get("data").as(LocalDate.class),
+                            dataInicio
+                    )
+            );
+        }
+
+        if (dataFim != null) {
+            specification = specification.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.lessThanOrEqualTo(
+                            root.get("data").as(LocalDate.class),
+                            dataFim
+                    )
+            );
+        }
+
+        return agendamentoRepository.findAll(specification, pageable)
+                .map(this::converterParaResponseDto);
     }
 
     // Cancelar agendamento

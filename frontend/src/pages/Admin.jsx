@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import './Admin.css'
 
@@ -34,6 +34,8 @@ function Admin() {
         cancelados: 0
     })
 
+    const buscarAgendamentosRef = useRef(buscarAgendamentos)
+
     // Formata uma data no padrão YYYY-MM-DD
     function formatarData(data) {
         const ano = data.getFullYear()
@@ -44,9 +46,9 @@ function Admin() {
     }
 
     // Calcula as datas que serão enviadas ao backend
-    function obterPeriodo() {
+    function obterPeriodo(periodo, inicio, fim) {
 
-        if (filtroPeriodo === 'HOJE') {
+        if (periodo === 'HOJE') {
             const hoje = formatarData(new Date())
 
             return {
@@ -55,26 +57,26 @@ function Admin() {
             }
         }
 
-        if (filtroPeriodo === 'SEMANA') {
-            const inicio = new Date()
+        if (periodo === 'SEMANA') {
+            const inicioSemana = new Date()
 
-            inicio.setDate(
-                inicio.getDate() - ((inicio.getDay() + 6) % 7)
+            inicioSemana.setDate(
+                inicioSemana.getDate() - ((inicioSemana.getDay() + 6) % 7)
             )
 
-            const fim = new Date(inicio)
-            fim.setDate(fim.getDate() + 6)
+            const fimSemana = new Date(inicioSemana)
+            fimSemana.setDate(fimSemana.getDate() + 6)
 
             return {
-                dataInicio: formatarData(inicio),
-                dataFim: formatarData(fim)
+                dataInicio: formatarData(inicioSemana),
+                dataFim: formatarData(fimSemana)
             }
         }
 
-        if (filtroPeriodo === 'PERSONALIZADO') {
+        if (periodo === 'PERSONALIZADO') {
             return {
-                dataInicio: dataInicio || undefined,
-                dataFim: dataFim || undefined
+                dataInicio: inicio || undefined,
+                dataFim: fim || undefined
             }
         }
 
@@ -82,28 +84,36 @@ function Admin() {
     }
 
     // Busca os agendamentos no backend
-    async function buscarAgendamentos() {
+    async function buscarAgendamentos(sobrescritas = {}) {
+
+        const periodoFiltro = sobrescritas.filtroPeriodo ?? filtroPeriodo
+        const inicioFiltro = sobrescritas.dataInicio ?? dataInicio
+        const fimFiltro = sobrescritas.dataFim ?? dataFim
+        const statusFiltro = sobrescritas.filtroStatus ?? filtroStatus
+        const pesquisaFiltro = sobrescritas.pesquisa ?? pesquisa
+        const paginaFiltro = sobrescritas.paginaAtual ?? paginaAtual
 
         setCarregandoAgendamentos(true)
         setErro('')
 
         try {
 
-            const periodo = obterPeriodo()
-
-            const parametros = {
-                pagina: paginaAtual,
-                tamanho: 10,
-                pesquisa: pesquisa.trim() || undefined,
-                status: filtroStatus !== 'TODOS' ? filtroStatus : undefined,
-                ...periodo
-            }
+            const periodo = obterPeriodo(
+                periodoFiltro,
+                inicioFiltro,
+                fimFiltro
+            )
 
             const resposta = await api.get('/api/agendamentos', {
-                params: parametros
+                params: {
+                    pagina: paginaFiltro,
+                    tamanho: 10,
+                    pesquisa: pesquisaFiltro.trim() || undefined,
+                    status: statusFiltro !== 'TODOS' ? statusFiltro : undefined,
+                    ...periodo
+                }
             })
 
-            // Os agendamentos agora ficam dentro de content
             setAgendamentos(resposta.data.content)
             setTotalPaginas(resposta.data.totalPages)
             setTotalAgendamentos(resposta.data.totalElements)
@@ -129,10 +139,12 @@ function Admin() {
 
         } catch (error) {
 
-            if (error.response?.status === 401 || error.response?.status === 403) {
+            if (error.response?.status === 401) {
                 sessionStorage.removeItem('tokenAdmin')
                 setAutenticado(false)
                 setErro('Sua sessão expirou. Faça login novamente.')
+            } else if (error.response?.status === 403) {
+                setErro('Você não tem permissão para acessar os agendamentos.')
             } else {
                 setErro('Não foi possível carregar os agendamentos.')
             }
@@ -157,10 +169,15 @@ function Admin() {
             try {
                 await api.get('/api/agendamentos')
                 setAutenticado(true)
+                await buscarAgendamentosRef.current()
 
             } catch (error) {
-                sessionStorage.removeItem('tokenAdmin')
-                setAutenticado(false)
+                if (error.response?.status === 401) {
+                    sessionStorage.removeItem('tokenAdmin')
+                    setAutenticado(false)
+                } else {
+                    setAutenticado(true)
+                }
 
             } finally {
                 setVerificando(false)
@@ -170,23 +187,6 @@ function Admin() {
         verificarAutenticacao()
 
     }, [])
-
-    // Busca novamente quando os filtros ou a página mudarem
-    useEffect(() => {
-
-        if (autenticado) {
-            buscarAgendamentos()
-        }
-
-    }, [
-        autenticado,
-        paginaAtual,
-        pesquisa,
-        filtroStatus,
-        filtroPeriodo,
-        dataInicio,
-        dataFim
-    ])
 
     // Realiza login
     async function realizarLogin(event) {
@@ -203,8 +203,9 @@ function Admin() {
 
             sessionStorage.setItem('tokenAdmin', resposta.data.token)
             setAutenticado(true)
+            await buscarAgendamentos()
 
-        } catch (error) {
+        } catch {
             setErro('E-mail ou senha inválidos.')
 
         } finally {
@@ -219,7 +220,7 @@ function Admin() {
             await api.patch(`/api/agendamentos/${id}/concluir`)
             await buscarAgendamentos()
 
-        } catch (error) {
+        } catch {
             setErro('Não foi possível concluir o agendamento.')
         }
     }
@@ -237,7 +238,7 @@ function Admin() {
             await api.patch(`/api/agendamentos/${id}/cancelar`)
             await buscarAgendamentos()
 
-        } catch (error) {
+        } catch {
             setErro('Não foi possível cancelar o agendamento.')
         }
     }
@@ -271,6 +272,14 @@ function Admin() {
         setDataInicio('')
         setDataFim('')
         setPaginaAtual(0)
+        buscarAgendamentos({
+            pesquisa: '',
+            filtroStatus: 'TODOS',
+            filtroPeriodo: 'TODOS',
+            dataInicio: '',
+            dataFim: '',
+            paginaAtual: 0
+        })
     }
 
     if (verificando) {
@@ -358,7 +367,7 @@ function Admin() {
 
                     <button
                         className="admin-button admin-button-primary"
-                        onClick={buscarAgendamentos}
+                        onClick={() => buscarAgendamentos()}
                         disabled={carregandoAgendamentos}
                     >
                         {carregandoAgendamentos ? 'Atualizando...' : 'Atualizar lista'}
@@ -408,6 +417,10 @@ function Admin() {
                             onChange={(e) => {
                                 setPesquisa(e.target.value)
                                 setPaginaAtual(0)
+                                buscarAgendamentos({
+                                    pesquisa: e.target.value,
+                                    paginaAtual: 0
+                                })
                             }}
                             className="admin-search"
                         />
@@ -419,6 +432,10 @@ function Admin() {
                                 onChange={(e) => {
                                     setFiltroStatus(e.target.value)
                                     setPaginaAtual(0)
+                                    buscarAgendamentos({
+                                        filtroStatus: e.target.value,
+                                        paginaAtual: 0
+                                    })
                                 }}
                             >
                                 <option value="TODOS">Todos os status</option>
@@ -432,6 +449,10 @@ function Admin() {
                                 onChange={(e) => {
                                     setFiltroPeriodo(e.target.value)
                                     setPaginaAtual(0)
+                                    buscarAgendamentos({
+                                        filtroPeriodo: e.target.value,
+                                        paginaAtual: 0
+                                    })
                                 }}
                             >
                                 <option value="TODOS">Todos os períodos</option>
@@ -455,6 +476,10 @@ function Admin() {
                                         onChange={(e) => {
                                             setDataInicio(e.target.value)
                                             setPaginaAtual(0)
+                                            buscarAgendamentos({
+                                                dataInicio: e.target.value,
+                                                paginaAtual: 0
+                                            })
                                         }}
                                     />
                                 </div>
@@ -468,6 +493,10 @@ function Admin() {
                                         onChange={(e) => {
                                             setDataFim(e.target.value)
                                             setPaginaAtual(0)
+                                            buscarAgendamentos({
+                                                dataFim: e.target.value,
+                                                paginaAtual: 0
+                                            })
                                         }}
                                     />
                                 </div>
@@ -578,7 +607,11 @@ function Admin() {
 
                             <button
                                 className="admin-button admin-button-logout"
-                                onClick={() => setPaginaAtual(paginaAtual - 1)}
+                                onClick={() => {
+                                    const novaPagina = paginaAtual - 1
+                                    setPaginaAtual(novaPagina)
+                                    buscarAgendamentos({ paginaAtual: novaPagina })
+                                }}
                                 disabled={paginaAtual === 0}
                             >
                                 Anterior
@@ -590,7 +623,11 @@ function Admin() {
 
                             <button
                                 className="admin-button admin-button-primary"
-                                onClick={() => setPaginaAtual(paginaAtual + 1)}
+                                onClick={() => {
+                                    const novaPagina = paginaAtual + 1
+                                    setPaginaAtual(novaPagina)
+                                    buscarAgendamentos({ paginaAtual: novaPagina })
+                                }}
                                 disabled={paginaAtual + 1 >= totalPaginas}
                             >
                                 Próxima
