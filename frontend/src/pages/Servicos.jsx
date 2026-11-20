@@ -5,16 +5,12 @@ import './Servicos.css'
 function Servicos() {
     const servicos = [
         {
-            nome: 'Corte',
+            nome: 'Corte + Sobrancelha',
             descricao: 'Um corte para renovar seu visual.'
         },
         {
-            nome: 'Corte + Barba',
-            descricao: 'Cabelo e barba alinhados para um visual completo.'
-        },
-        {
-            nome: 'Corte + Sobrancelha',
-            descricao: 'Corte e acabamento para valorizar seu estilo.'
+            nome: 'Barba',
+            descricao: 'Barba e sobrancelha alinhados para um visual completo.'
         },
         {
             nome: 'Completo',

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useRef } from 'react'
 import api from '../services/api'
 import './Admin.css'
@@ -14,6 +13,15 @@ function Admin() {
 
     const [agendamentos, setAgendamentos] = useState([])
     const [carregandoAgendamentos, setCarregandoAgendamentos] = useState(false)
+
+    // Bloqueios de horários
+    const [dataBloqueio, setDataBloqueio] = useState(() => formatarData(new Date()))
+    const [horariosSelecionados, setHorariosSelecionados] = useState([])
+    const [motivoBloqueio, setMotivoBloqueio] = useState('')
+    const [bloqueios, setBloqueios] = useState([])
+    const [carregandoBloqueios, setCarregandoBloqueios] = useState(false)
+    const [erroBloqueio, setErroBloqueio] = useState('')
+    const [sucessoBloqueio, setSucessoBloqueio] = useState('')
 
     // Filtros
     const [filtroStatus, setFiltroStatus] = useState('TODOS')
@@ -154,6 +162,179 @@ function Admin() {
         }
     }
 
+    // Buscar bloqueios de uma data
+    async function buscarBloqueios() {
+
+        setCarregandoBloqueios(true)
+        setErroBloqueio('')
+
+        try {
+            const resposta = await api.get('/api/bloqueios-horarios', {
+                params: { data: dataBloqueio }
+            })
+
+            setBloqueios(resposta.data)
+
+        } catch {
+            setErroBloqueio('Não foi possível carregar os bloqueios.')
+
+        } finally {
+            setCarregandoBloqueios(false)
+        }
+    }
+
+    // Gera os horários de funcionamento em intervalos de 30 minutos.
+    function obterHorariosFuncionamento() {
+        const horarios = []
+
+        // Manhã: 08:00 até 12:00
+        for (let minutos = 8 * 60; minutos < 12 * 60; minutos += 30) {
+            const hora = String(Math.floor(minutos / 60)).padStart(2, '0')
+            const minuto = String(minutos % 60).padStart(2, '0')
+            horarios.push(`${hora}:${minuto}`)
+        }
+
+        // Tarde: 13:00 até 18:00
+        for (let minutos = 13 * 60; minutos < 18 * 60; minutos += 30) {
+            const hora = String(Math.floor(minutos / 60)).padStart(2, '0')
+            const minuto = String(minutos % 60).padStart(2, '0')
+            horarios.push(`${hora}:${minuto}`)
+        }
+
+        return horarios
+    }
+
+    // Converte HH:mm para minutos.
+    function horarioEmMinutos(horario) {
+        const [hora, minuto] = horario.slice(0, 5).split(':').map(Number)
+        return hora * 60 + minuto
+    }
+
+    // Verifica se o horário já está dentro de um bloqueio cadastrado.
+    function horarioEstaBloqueado(horario) {
+        const inicio = horarioEmMinutos(horario)
+        const fim = inicio + 30
+
+        return bloqueios.some((bloqueio) => {
+            const inicioBloqueio = horarioEmMinutos(bloqueio.horarioInicio)
+            const fimBloqueio = horarioEmMinutos(bloqueio.horarioFim)
+
+            return inicio < fimBloqueio && fim > inicioBloqueio
+        })
+    }
+
+    // Seleciona ou desmarca um horário.
+    function alternarHorario(horario) {
+        setHorariosSelecionados((atuais) =>
+            atuais.includes(horario)
+                ? atuais.filter((item) => item !== horario)
+                : [...atuais, horario].sort()
+        )
+        setErroBloqueio('')
+        setSucessoBloqueio('')
+    }
+
+    // Agrupa horários consecutivos em intervalos.
+    function agruparHorariosSelecionados(horarios) {
+        const ordenados = [...horarios].sort()
+        const intervalos = []
+
+        ordenados.forEach((horario) => {
+            const inicio = horarioEmMinutos(horario)
+            const fim = inicio + 30
+            const ultimo = intervalos[intervalos.length - 1]
+
+            if (ultimo && horarioEmMinutos(ultimo.horarioFim) === inicio) {
+                const hora = String(Math.floor(fim / 60)).padStart(2, '0')
+                const minuto = String(fim % 60).padStart(2, '0')
+                ultimo.horarioFim = `${hora}:${minuto}`
+            } else {
+                const horaFim = String(Math.floor(fim / 60)).padStart(2, '0')
+                const minutoFim = String(fim % 60).padStart(2, '0')
+
+                intervalos.push({
+                    horarioInicio: horario,
+                    horarioFim: `${horaFim}:${minutoFim}`
+                })
+            }
+        })
+
+        return intervalos
+    }
+
+    // Cadastra todos os horários selecionados.
+    async function cadastrarBloqueio(event) {
+        event.preventDefault()
+        setErroBloqueio('')
+        setSucessoBloqueio('')
+
+        if (horariosSelecionados.length === 0) {
+            setErroBloqueio('Selecione pelo menos um horário para bloquear.')
+            return
+        }
+
+        const intervalos = agruparHorariosSelecionados(horariosSelecionados)
+        let quantidadeCadastrada = 0
+
+        try {
+            for (const intervalo of intervalos) {
+                await api.post('/api/bloqueios-horarios', {
+                    data: dataBloqueio,
+                    horarioInicio: intervalo.horarioInicio,
+                    horarioFim: intervalo.horarioFim,
+                    motivo: motivoBloqueio
+                })
+                quantidadeCadastrada++
+            }
+
+            setSucessoBloqueio(
+                horariosSelecionados.length === 1
+                    ? 'Horário bloqueado com sucesso!'
+                    : `${horariosSelecionados.length} horários bloqueados com sucesso!`
+            )
+            setHorariosSelecionados([])
+            setMotivoBloqueio('')
+            await buscarBloqueios()
+
+        } catch (error) {
+            const mensagem =
+                error.response?.data?.mensagem ||
+                error.response?.data?.message ||
+                'Não foi possível bloquear todos os horários selecionados.'
+
+            setErroBloqueio(
+                quantidadeCadastrada > 0
+                    ? `${mensagem} ${quantidadeCadastrada} intervalo(s) já foi/foram bloqueado(s).`
+                    : mensagem
+            )
+            await buscarBloqueios()
+        }
+    }
+
+    // Remover bloqueio
+    async function removerBloqueio(id) {
+
+        const confirmar = window.confirm(
+            'Deseja realmente remover este bloqueio? Os clientes poderão agendar novamente nesse período.'
+        )
+
+        if (!confirmar) return
+
+        setErroBloqueio('')
+        setSucessoBloqueio('')
+
+        try {
+            await api.delete(`/api/bloqueios-horarios/${id}`)
+
+            setSucessoBloqueio('Bloqueio removido com sucesso!')
+
+            await buscarBloqueios()
+
+        } catch {
+            setErroBloqueio('Não foi possível remover o bloqueio.')
+        }
+    }
+
     // Verifica a autenticação ao abrir a página
     useEffect(() => {
 
@@ -187,6 +368,15 @@ function Admin() {
         verificarAutenticacao()
 
     }, [])
+
+    // Busca os bloqueios quando a data muda
+    useEffect(() => {
+
+        if (autenticado && dataBloqueio) {
+            buscarBloqueios()
+        }
+
+    }, [autenticado, dataBloqueio])
 
     // Realiza login
     async function realizarLogin(event) {
@@ -253,6 +443,10 @@ function Admin() {
         setSenha('')
         setErro('')
         setAgendamentos([])
+        setBloqueios([])
+        setHorariosSelecionados([])
+        setErroBloqueio('')
+        setSucessoBloqueio('')
 
         setFiltroStatus('TODOS')
         setPesquisa('')
@@ -398,6 +592,146 @@ function Admin() {
                         <span>Cancelados</span>
                         <strong>{resumo.cancelados}</strong>
                     </div>
+
+                </section>
+
+                {/* Gerenciamento de bloqueios */}
+                <section className="admin-bookings admin-blocks">
+
+                    <div className="admin-bookings-header">
+                        <h2>Bloqueio de horários</h2>
+                    </div>
+
+                    <p>Bloqueie períodos em que a barbearia não estará disponível.</p>
+
+                    <form onSubmit={cadastrarBloqueio}>
+
+                        <div className="admin-form-group">
+                            <label>Data</label>
+                            <input
+                                type="date"
+                                value={dataBloqueio}
+                                min={formatarData(new Date())}
+                                onChange={(e) => {
+                                    setDataBloqueio(e.target.value)
+                                    setHorariosSelecionados([])
+                                }}
+                                required
+                            />
+                        </div>
+
+                        <div className="admin-time-selection">
+                            <div className="admin-time-selection-header">
+                                <label>Selecione um ou mais horários</label>
+                                <span>{horariosSelecionados.length} selecionado(s)</span>
+                            </div>
+
+                            <div className="admin-time-grid">
+                                {obterHorariosFuncionamento().map((horario) => {
+                                    const bloqueado = horarioEstaBloqueado(horario)
+                                    const selecionado = horariosSelecionados.includes(horario)
+
+                                    return (
+                                        <button
+                                            key={horario}
+                                            type="button"
+                                            className={`admin-time-option ${selecionado ? 'selected' : ''} ${bloqueado ? 'blocked' : ''}`}
+                                            onClick={() => alternarHorario(horario)}
+                                            disabled={bloqueado || carregandoBloqueios}
+                                            title={bloqueado ? 'Este horário já está bloqueado' : 'Selecionar horário'}
+                                        >
+                                            {horario}
+                                            {bloqueado && <span>Bloqueado</span>}
+                                        </button>
+                                    )
+                                })}
+                            </div>
+
+                            <p className="admin-time-help">
+                                Cada opção representa 30 minutos. Clique para selecionar ou desmarcar.
+                                O intervalo de almoço (12:00 às 13:00) não está disponível.
+                            </p>
+                        </div>
+
+                        <div className="admin-form-group">
+                            <label>Motivo (opcional)</label>
+                            <input
+                                type="text"
+                                value={motivoBloqueio}
+                                onChange={(e) => setMotivoBloqueio(e.target.value)}
+                                placeholder="Ex.: Compromisso pessoal"
+                                maxLength={255}
+                            />
+                        </div>
+
+                        <button
+                            type="submit"
+                            className="admin-button admin-button-primary"
+                            disabled={horariosSelecionados.length === 0 || carregandoBloqueios}
+                        >
+                            Bloquear {horariosSelecionados.length > 0
+                            ? `${horariosSelecionados.length} horário(s)`
+                            : 'horários'}
+                        </button>
+
+                    </form>
+                    {erroBloqueio && (
+                        <p className="admin-error">{erroBloqueio}</p>
+                    )}
+
+                    {sucessoBloqueio && (
+                        <p className="admin-success">{sucessoBloqueio}</p>
+                    )}
+
+                    <h3>Bloqueios cadastrados</h3>
+
+                    {carregandoBloqueios ? (
+
+                        <p className="admin-empty">Carregando bloqueios...</p>
+
+                    ) : bloqueios.length === 0 ? (
+
+                        <p className="admin-empty">
+                            Nenhum bloqueio cadastrado para esta data.
+                        </p>
+
+                    ) : (
+
+                        <div className="admin-bookings-list">
+
+                            {bloqueios.map((bloqueio) => (
+
+                                <article className="admin-booking-card" key={bloqueio.id}>
+
+                                    <div className="admin-booking-info">
+
+                                        <h3>
+                                            {bloqueio.horarioInicio.slice(0, 5)}
+                                            {' às '}
+                                            {bloqueio.horarioFim.slice(0, 5)}
+                                        </h3>
+
+                                        <p>
+                                            <strong>Motivo:</strong>{' '}
+                                            {bloqueio.motivo || 'Não informado'}
+                                        </p>
+
+                                    </div>
+
+                                    <button
+                                        type="button"
+                                        className="admin-button admin-button-cancel"
+                                        onClick={() => removerBloqueio(bloqueio.id)}
+                                    >
+                                        Remover bloqueio
+                                    </button>
+
+                                </article>
+
+                            ))}
+
+                        </div>
+                    )}
 
                 </section>
 

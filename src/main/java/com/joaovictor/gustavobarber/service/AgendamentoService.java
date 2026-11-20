@@ -11,9 +11,11 @@ import com.joaovictor.gustavobarber.exception.ConflitoException;
 import com.joaovictor.gustavobarber.exception.RegraNegocioException;
 import com.joaovictor.gustavobarber.exception.RecursoNaoEncontradoException;
 import com.joaovictor.gustavobarber.model.Agendamento;
+import com.joaovictor.gustavobarber.model.BloqueioHorario;
 import com.joaovictor.gustavobarber.model.Cliente;
 import com.joaovictor.gustavobarber.model.Servico;
 import com.joaovictor.gustavobarber.repository.AgendamentoRepository;
+import com.joaovictor.gustavobarber.repository.BloqueioHorarioRepository;
 import com.joaovictor.gustavobarber.repository.ServicoRepository;
 
 import org.springframework.data.domain.Page;
@@ -35,17 +37,20 @@ public class AgendamentoService {
     private final ServicoRepository servicoRepository;
     private final ClienteService clienteService;
     private final JdbcTemplate jdbcTemplate;
+    private final BloqueioHorarioRepository bloqueioHorarioRepository;
 
     public AgendamentoService(
             AgendamentoRepository agendamentoRepository,
             ServicoRepository servicoRepository,
             ClienteService clienteService,
-            JdbcTemplate jdbcTemplate) {
+            JdbcTemplate jdbcTemplate,
+            BloqueioHorarioRepository bloqueioHorarioRepository) {
 
         this.agendamentoRepository = agendamentoRepository;
         this.servicoRepository = servicoRepository;
         this.clienteService = clienteService;
         this.jdbcTemplate = jdbcTemplate;
+        this.bloqueioHorarioRepository = bloqueioHorarioRepository;
     }
 
     // Criar um novo agendamento
@@ -205,7 +210,7 @@ public class AgendamentoService {
         }
     }
 
-    // Verificar se existe conflito com outro agendamento
+    // Validar conflito com agendamentos ou bloqueios
     private void validarConflito(
             LocalDate data,
             LocalTime horario,
@@ -217,6 +222,7 @@ public class AgendamentoService {
         }
     }
 
+    // Verificar conflitos com agendamentos e horários bloqueados
     private boolean existeConflito(
             LocalDate data,
             LocalTime horario,
@@ -224,7 +230,8 @@ public class AgendamentoService {
 
         LocalTime fimNovoAgendamento = horario.plusMinutes(duracaoMinutos);
 
-        return agendamentoRepository.findByData(data)
+        // Verifica conflitos com agendamentos existentes.
+        boolean conflitoAgendamento = agendamentoRepository.findByData(data)
                 .stream()
                 .filter(agendamento ->
                         agendamento.getStatus() != StatusAgendamento.CANCELADO)
@@ -239,6 +246,18 @@ public class AgendamentoService {
                     return horario.isBefore(fimExistente)
                             && fimNovoAgendamento.isAfter(inicioExistente);
                 });
+
+        // Verifica conflitos com bloqueios cadastrados pelo administrador.
+        boolean conflitoBloqueio = bloqueioHorarioRepository.findByData(data)
+                .stream()
+                .anyMatch(bloqueio ->
+                        horario.isBefore(bloqueio.getHorarioFim())
+                                && fimNovoAgendamento.isAfter(
+                                bloqueio.getHorarioInicio()
+                        )
+                );
+
+        return conflitoAgendamento || conflitoBloqueio;
     }
 
     // Buscar serviço pelo ID

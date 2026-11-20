@@ -1,4 +1,3 @@
-
 /* Configurações gerais */
 
 .admin-dashboard,
@@ -379,10 +378,165 @@
     margin: 15px 0;
 }
 
+.admin-success {
+    background: #1d3b22;
+    color: #39FF14;
+    border: 1px solid #326b39;
+    border-radius: 6px;
+    padding: 12px;
+    margin: 15px 0;
+    font-size: 14px;
+}
+
 .admin-empty {
     color: #999999;
     text-align: center;
     padding: 30px 10px;
+}
+
+/* Gerenciamento de bloqueios */
+
+.admin-blocks {
+    margin-bottom: 40px;
+}
+
+.admin-blocks > p {
+    color: #999999;
+    font-size: 14px;
+    margin: 0 0 25px;
+    line-height: 1.5;
+}
+
+/* Formulário de bloqueio */
+
+.admin-blocks > form {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 5px;
+}
+
+.admin-blocks .admin-form-group {
+    margin-bottom: 18px;
+}
+
+.admin-blocks .admin-form-group input {
+    width: 100%;
+    min-width: 0;
+}
+
+.admin-blocks .admin-form-group input::-webkit-calendar-picker-indicator {
+    cursor: pointer;
+    filter: invert(1);
+}
+
+.admin-blocks > form > .admin-button {
+    align-self: flex-start;
+    min-width: 190px;
+    margin-top: 5px;
+}
+
+/* Seleção de horários */
+
+.admin-time-selection {
+    margin: 12px 0 24px;
+}
+
+.admin-time-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.admin-time-selection-header label {
+    color: #ffffff;
+    font-size: 15px;
+    font-weight: bold;
+}
+
+.admin-time-selection-header span {
+    color: #39FF14;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.admin-time-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.admin-time-option {
+    min-height: 52px;
+    padding: 8px 5px;
+    background: #252525;
+    color: #ffffff;
+    border: 1px solid #444444;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+}
+
+.admin-time-option:hover:not(:disabled) {
+    border-color: #39FF14;
+    color: #39FF14;
+}
+
+.admin-time-option.selected {
+    background: #39FF14;
+    border-color: #39FF14;
+    color: #101010;
+}
+
+.admin-time-option.blocked,
+.admin-time-option:disabled {
+    background: #3a2020;
+    border-color: #542626;
+    color: #ff7777;
+    cursor: not-allowed;
+    opacity: 0.75;
+}
+
+.admin-time-option span {
+    font-size: 9px;
+    font-weight: normal;
+}
+
+.admin-time-help {
+    color: #999999;
+    font-size: 12px;
+    margin: 12px 0 0;
+    line-height: 1.5;
+}
+
+/* Bloqueios já cadastrados */
+
+.admin-blocks > h3 {
+    font-size: 17px;
+    margin: 30px 0 18px;
+}
+
+.admin-blocks .admin-booking-card {
+    border-left: 3px solid #39FF14;
+}
+
+.admin-blocks .admin-booking-info h3 {
+    margin: 0 0 10px;
+    color: #39FF14;
+    font-size: 19px;
+}
+
+.admin-blocks .admin-booking-info p {
+    margin: 0;
 }
 
 /* Tela de login */
@@ -491,6 +645,10 @@
     .admin-bookings {
         padding: 18px;
     }
+
+    .admin-time-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 600px) {
@@ -508,6 +666,20 @@
     }
 
     .admin-date-filters div {
+        width: 100%;
+    }
+
+    .admin-time-grid {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .admin-time-selection-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .admin-blocks > form > .admin-button {
         width: 100%;
     }
 }

@@ -19,12 +19,12 @@ function Header() {
             <nav className={`navigation ${menuAberto ? 'aberta' : ''}`}>
                 <Link to="/" onClick={fecharMenu}>Início</Link>
                 <Link to="/servicos" onClick={fecharMenu}>Serviços</Link>
-                <Link to="/agendamento" onClick={fecharMenu}>Agendamento</Link>
             </nav>
 
             <Link
                 to="/agendamento"
                 className="header-button"
+                onClick={fecharMenu}
             >
                 Agendar horário
             </Link>
