@@ -11,13 +11,11 @@ import com.joaovictor.gustavobarber.exception.ConflitoException;
 import com.joaovictor.gustavobarber.exception.RegraNegocioException;
 import com.joaovictor.gustavobarber.exception.RecursoNaoEncontradoException;
 import com.joaovictor.gustavobarber.model.Agendamento;
-import com.joaovictor.gustavobarber.model.BloqueioHorario;
 import com.joaovictor.gustavobarber.model.Cliente;
 import com.joaovictor.gustavobarber.model.Servico;
 import com.joaovictor.gustavobarber.repository.AgendamentoRepository;
 import com.joaovictor.gustavobarber.repository.BloqueioHorarioRepository;
 import com.joaovictor.gustavobarber.repository.ServicoRepository;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
